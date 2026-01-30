@@ -1,5 +1,7 @@
 # Transaction Tracker
 
+[![Download APK](https://img.shields.io/badge/Download-APK-success?style=for-the-badge&logo=android)](https://github.com/theallmyti/transaction-tracker/releases/download/app/Transaction-Tracker.apk)
+
 Transaction Tracker is a modern Android application designed to help you manage your finances with ease. Built with Jetpack Compose and Kotlin, it offers a beautiful, glassmorphic UI and automated transaction tracking via SMS parsing.
 
 ## Features
