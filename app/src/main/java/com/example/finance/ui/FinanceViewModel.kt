@@ -138,8 +138,8 @@ class FinanceViewModel(private val repository: FinanceRepository) : ViewModel() 
     private fun checkForUpdates() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // TODO: Replace with your actual GitHub Raw URL
-                val url = java.net.URL("https://raw.githubusercontent.com/placeholder_user/placeholder_repo/main/version.json")
+                // Real GitHub Raw URL
+                val url = java.net.URL("https://raw.githubusercontent.com/theallmyti/transaction-tracker/main/version.json")
                 val connection = url.openConnection() as java.net.HttpURLConnection
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
@@ -161,7 +161,7 @@ class FinanceViewModel(private val repository: FinanceRepository) : ViewModel() 
                     val downloadUrl = json.getString("downloadUrl")
                     val latestVersionName = json.getString("versionName")
                     
-                    val currentVersionCode = 1 
+                    val currentVersionCode = com.example.finance.BuildConfig.VERSION_CODE 
                     
                     if (remoteVersionCode > currentVersionCode) {
                          _updateInfo.value = UpdateInfo(true, downloadUrl, latestVersionName)
