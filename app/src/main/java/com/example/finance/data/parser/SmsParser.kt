@@ -23,44 +23,59 @@ object SmsParser {
         var amount = 0.0
 
         // 2. Amount & Type Detection
-        // Pattern to catch "Sent Rs.40.00" or "Spent Rs 500" or "Credited Rs 1000"
-        // We use non-capturing groups for the keywords
-        val amountRegex = Regex("(?i)(?:sent|spent|paid|debited|credited|received|deposited).*?(?:rs\\.?|inr)\\s*([0-9,]+(?:\\.[0-9]+)?)")
-        val match = amountRegex.find(body)
+        // Strategy A: "Sent Rs. 40" (Keyword ... Amount)
+        val amountRegexA = Regex("(?i)(?:sent|spent|paid|debited|credited|received|deposited|transferred).*?(?:rs\\.?|inr)\\s*([0-9,]+(?:\\.[0-9]+)?)")
+        var match = amountRegexA.find(body)
+
+        // Strategy B: "Rs. 66 Credited" (Amount ... Keyword) - Common in Bank of Baroda
+        if (match == null) {
+            val amountRegexB = Regex("(?i)(?:rs\\.?|inr)\\s*([0-9,]+(?:\\.[0-9]+)?).*?(?:credited|debited|transferred|deposited)")
+            match = amountRegexB.find(body)
+        }
 
         if (match != null) {
-            val amountStr = match.groupValues[1].replace(",", "")
+            val amountStr = match!!.groupValues[1].replace(",", "")
             amount = amountStr.toDoubleOrNull() ?: return null
             
-            // Determine type based on keywords present in the MATCHED string or the whole body
-            // We check the whole regular expression match to see which keyword triggered it, or just content check
+            // Determine type
             if (lowerBody.contains("credited") || lowerBody.contains("received") || lowerBody.contains("deposited")) {
                 type = "income"
-            } else {
-                // Default to expense for Sent/Spent/Paid/Debited
+            } else if (lowerBody.contains("debited") || lowerBody.contains("spent") || lowerBody.contains("paid") || lowerBody.contains("sent") || lowerBody.contains("transferred")) {
                 type = "expense"
             }
         } else {
-            // Fallback for just "Rs. 40.00" without explicit keyword close by? 
-            // The user's format starts with "Sent Rs.40.00", so the above regex should catch it.
-            return null
+             return null
         }
 
         // 3. Extract Merchant
-        // Structure: "To SAINATHCANTEEN one" or "at AMAZON"
-        // We look for 'To' or 'At' followed by text until end of line or specific keywords
+        // Patterns:
+        // 1. "to SAINATH" / "at AMAZON"
+        // 2. "by LIC..." (IncomeSource)
+        // 3. "to:UPI/..."
         var merchant = "Unknown"
-        val merchantRegex = Regex("(?i)(?:to|at|vp)\\s+([a-zA-Z0-9\\s]+)")
+        
+        // Try 'to:' or 'by' or 'at' or 'vp'
+        val merchantRegex = Regex("(?i)(?:to|at|vp|by)\\s*[:]?\\s*([a-zA-Z0-9\\s/\\-_]+)")
         val merchantMatch = merchantRegex.find(body)
+        
         if (merchantMatch != null) {
-            // Take the captured group
-            var extracted = merchantMatch.groupValues[1].trim()
-            // Clean up if it grabbed too much (e.g. up to 'On')
-            val splitOnKeywords = extracted.split(Regex("(?i)\\s+(on|ref|dated|from|bal)"))
-            if (splitOnKeywords.isNotEmpty()) {
-                extracted = splitOnKeywords[0]
-            }
-            merchant = extracted.trim()
+             var extracted = merchantMatch.groupValues[1].trim()
+             
+             // Cleanup: Stop at common delimiters like " thru", " on", " ref", " bal"
+             val stopWords = listOf(" thru", " on", " ref", " bal", " dated", " from")
+             var lowestIndex = extracted.length
+             
+             for (word in stopWords) {
+                 val idx = extracted.lowercase().indexOf(word)
+                 if (idx != -1 && idx < lowestIndex) {
+                     lowestIndex = idx
+                 }
+             }
+             
+             extracted = extracted.substring(0, lowestIndex).trim()
+             if (extracted.isNotEmpty()) {
+                 merchant = extracted
+             }
         }
         
         // Final sanity check: Ignore OTP messages which often contain amounts
