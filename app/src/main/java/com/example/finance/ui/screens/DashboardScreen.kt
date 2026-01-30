@@ -330,6 +330,22 @@ fun DashboardScreen(
                 }
                 Spacer(modifier = Modifier.height(32.dp))
             }
+            
+            // App Version Footer
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Version ${com.example.finance.BuildConfig.VERSION_NAME}",
+                        style = Typography.bodySmall,
+                        color = TextTertiary.copy(alpha = 0.5f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(32.dp))
+            }
         }
         
         // Dialogs
@@ -404,7 +420,12 @@ fun DashboardScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("New Update Available! \uD83D\uDE80", style = Typography.titleLarge, color = White)
+                        Text(
+                            text = "New Update Available!", 
+                            style = Typography.titleLarge, 
+                            color = White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             "Version ${updateInfo!!.latestVersion} is now available.", 
